@@ -1,0 +1,63 @@
+<?php
+header('Content-Type: application/json');
+
+// Retrieve the amount from POST data
+$amount = $_POST['amount'];
+
+// API endpoint and key
+$apiUrl = 'https://api.changenow.io/v2/exchange';
+$apiKey = '07c68a80cc1582087df7509f51a8a8b29eb5ec3f13db8c40a7633c6b1801b832';
+
+// Prepare the payload
+$data = [
+    'address' => '42Nv2uwxQschCUsFcN4N9cLRh29TEgUy5gZJVuqs3D7xC9KA5dztpBggKx4jx8bGfAFE3k7Jkn9Px5REVkpTNbgnUhHFhRD',
+    'flow' => 'standard',
+    'fromAmount' => $amount,
+    'fromCurrency' => 'XMR',
+    'fromNetwork' => 'XMR',
+    'linkId' => '46d52853f5d49f',
+    'source' => 'widget',
+    'toCurrency' => 'XMR',
+    'toNetwork' => 'XMR',
+    'type' => 'direct'
+];
+
+// Initialize cURL
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, $apiUrl);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    'Content-Type: application/json',
+    'X-Changenow-Api-Key: ' . $apiKey,
+    'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 OPR/107.0.0.0'
+]);
+
+// Execute the request
+$response = curl_exec($ch);
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+// Check for errors
+if (curl_errno($ch)) {
+    echo json_encode(['error' => curl_error($ch)]);
+} elseif ($httpCode != 200) {
+    echo json_encode(['error' => 'Unexpected HTTP status code: ' . $httpCode]);
+} else {
+    // Parse the response to remove sensitive information
+    $responseData = json_decode($response, true);
+    if (json_last_error() === JSON_ERROR_NONE) {
+        // Keep only the payinAddress and fromAmount in the response
+        $filteredResponse = [
+            'fromAmount' => $responseData['fromAmount'],
+            'payinAddress' => $responseData['payinAddress']
+        ];
+        echo json_encode($filteredResponse);
+    } else {
+        echo json_encode(['error' => 'Invalid JSON response from API']);
+    }
+}
+
+// Close cURL
+curl_close($ch);
+?>
